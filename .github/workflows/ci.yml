@@ -49,12 +49,10 @@ jobs:
         python-version: '3.12'
 
     - name: Install uv
-      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      uses: astral-sh/setup-uv@v5
 
     - name: Install dependencies
-      run: |
-        source $HOME/.local/bin/env
-        uv pip install --system numpy scipy quantlib
+      run: uv pip install --system numpy scipy quantlib
 
     - name: Python smoke test
       run: |
