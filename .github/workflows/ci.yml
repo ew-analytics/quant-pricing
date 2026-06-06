@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          clang cmake ninja-build \
+          libboost-all-dev libeigen3-dev \
+          libgtest-dev
+
+    - name: Build GTest
+      run: |
+        cmake /usr/src/googletest -B /tmp/gtest_build
+        cmake --build /tmp/gtest_build -j4
+        sudo cmake --install /tmp/gtest_build
+
+    - name: Configure
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build -j4
+
+    - name: Test
+      run: cd build && ctest --output-on-failure
+
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Install dependencies
+      run: |
+        source $HOME/.local/bin/env
+        uv pip install --system numpy scipy quantlib
+
+    - name: Python smoke test
+      run: |
+        python3 -c "
+        import QuantLib as ql
+        import numpy as np
+        print('QuantLib:', ql.__version__)
+        print('NumPy:', np.__version__)
+        print('CI OK')
+        "
